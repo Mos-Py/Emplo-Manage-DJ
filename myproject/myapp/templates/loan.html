@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}ระบบกู้เงิน{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-start mb-4 gap-4 fs-5">
+        <span id="btnWithdraw" style="cursor: pointer; color: gray;">เบิกเงิน</span>
+        <span id="btnLoan" style="cursor: pointer; font-weight: bold; color: #000;">กู้เงิน</span>
+    </div>
+
+    <div class="row">
+        <!-- ฟอร์มกู้เงิน -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header text-center text-white" style="background-color: #00bcd4;">
+                    <h5 class="mb-0">ระบบกู้เงิน</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'save_fee' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="fee_status" value="1">
+                        <div class="mb-3">
+                            <label class="form-label">วันที่</label>
+                            <input type="date" name="fee_date" class="form-control" value="{{ today|date:'Y-m-d' }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">ชื่อ</label>
+                            <select class="form-select" name="person" id="person" required>
+                                <option value="">-- เลือกพนักงาน --</option>
+                                {% for person in persons %}
+                                    <option value="{{ person.id }}">{{ person.get_title_display }} {{ person.first_name }} {{ person.last_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">จำนวนเงิน</label>
+                            <input type="number" name="amount" class="form-control" required min="1">
+                        </div>
+
+                        <!-- ลบฟิลด์ "จำนวนเงินที่ต้องจ่ายต่อเดือน" -->
+                        
+                        <div class="mb-3">
+                            <label class="form-label">หมายเหตุ</label>
+                            <textarea class="form-control" name="description" rows="3"></textarea>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-secondary">บันทึก</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- กล่องข้างประวัติ + คงเหลือ -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header text-center text-white" style="background-color: #dc3545;">
+                    <h5 class="mb-0">ประวัติและเงินกู้คงเหลือ</h5>
+                </div>
+                <div class="card-body bg-light">
+                    <div id="loan-history-box">
+                        <p class="text-muted">(ยังไม่มีข้อมูล)</p>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="text-center fw-bold">
+                        เงินกู้คงเหลือทั้งหมด: <span id="loan-balance-box">0</span> บาท
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/loan.js' %}"></script>
+<script>
+    document.getElementById("btnWithdraw").addEventListener("click", function() {
+        window.location.href = "{% url 'withdraw_form' %}";
+    });
+    
+    document.getElementById("btnLoan").addEventListener("click", function() {
+        window.location.href = "{% url 'loan_form' %}";
+    });
+</script>
+{% endblock %}

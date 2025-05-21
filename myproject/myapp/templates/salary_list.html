@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}ระบบจัดการเงินเดือน{% endblock %}
+
+{% block head_extra %}
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="{% static 'css/base.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4 mb-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0">
+            <i class="fas fa-file-invoice-dollar me-2 text-primary"></i> 
+            รายการเงินเดือน
+        </h2>
+        <div class="btn-group">
+            <button class="btn btn-sm btn-outline-success" id="btnExcel">
+                <i class="fas fa-file-excel me-1"></i> Excel
+            </button>
+            <button class="btn btn-sm btn-outline-danger" id="btnPdf">
+                <i class="fas fa-file-pdf me-1"></i> PDF
+            </button>
+        </div>
+    </div>
+
+    <div class="card shadow border-0 rounded-3 mb-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table id="salaryTable" class="table table-striped table-bordered mb-0" style="width:100%">
+                    <thead class="table-light">
+                        <tr>
+                            <th>รหัส</th>
+                            <th>ชื่อพนักงาน</th>
+                            <th>ตำแหน่ง</th>
+                            <th>เงินเดือน</th>
+                            <th>สถานะ</th>
+                            <th class="text-center">การจัดการ</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for person in persons %}
+                        <tr>
+                            <td class="fw-bold text-primary">{{ person.id }}</td>
+                            <td data-order="{{ person.first_name }}">
+                                {{ person.display_name }}
+                            </td>
+                            <td>{{ person.display_role }}</td>
+                            <td data-order="{% if person.salary_saved %}{{ person.salary_total|floatformat:2 }}{% else %}-1{% endif %}">
+                                {% if person.salary_saved %}
+                                    {{ person.salary_total|floatformat:2|intcomma }} บาท
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td data-order="{% if person.salary_saved %}0{% else %}1{% endif %}">
+                                {% if person.salary_saved %}
+                                    <span class="badge bg-success-soft text-success">
+                                        <i class="fas fa-check-circle me-1"></i> บันทึกแล้ว
+                                    </span>
+                                {% else %}
+                                    <span class="badge bg-warning-soft text-warning">
+                                        <i class="fas fa-exclamation-circle me-1"></i> ยังไม่บันทึก
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if person.id in salary_records %}
+                                <button type="button" class="show-salary-btn btn btn-sm btn-outline-info btn-action" 
+                                        data-person-id="{{ person.id }}">
+                                    <i class="fas fa-eye me-1"></i> ดูข้อมูล
+                                </button>
+                                {% else %}
+                                    <button type="button" class="btn btn-sm btn-primary" onclick="clearSalaryForm(); openSalaryForm({{ person.id }})">
+                                        <i class="fas fa-plus-circle me-1"></i> บันทึก
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <div class="text-muted"><i class="fas fa-info-circle me-1"></i> ไม่พบข้อมูลพนักงาน</div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% include "salary_form_modal.html" %}
+    {% include "salary_details_modal.html" %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<script>
+$(document).ready(function () {
+    $('#salaryTable').DataTable({
+        ordering: true,
+        searching: true,
+        paging: true,
+        pageLength: 10,
+        order: [[0, 'desc']], // ✅ เรียงตามรหัสมาก → น้อยเป็น default
+        language: {
+            lengthMenu: "แสดง _MENU_ รายการ",
+            info: "แสดง _START_ ถึง _END_ จากทั้งหมด _TOTAL_ รายการ",
+            search: "ค้นหา:",
+            paginate: {
+                first: "หน้าแรก",
+                last: "หน้าสุดท้าย",
+                next: "ถัดไป",
+                previous: "ก่อนหน้า"
+            }
+        },
+        columnDefs: [
+            { orderable: false, targets: 5 }
+        ]
+    });
+});
+</script>
+
+<script src="{% static 'js/salary/salary_core.js' %}"></script>
+<script src="{% static 'js/salary/salary_calc.js' %}"></script>
+<script src="{% static 'js/salary/salary_modal.js' %}"></script>
+<script src="{% static 'js/salary/salary_TH.js' %}"></script>
+<script src="{% static 'js/salary/salary_utils.js' %}"></script>
+{% endblock %}

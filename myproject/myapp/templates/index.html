@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}หน้าหลัก{% endblock %}
+
+{% block content %}
+<div class="container mt-3">
+  <div class="text-center mb-5">
+    <h1 class="display-4 fw-bold mb-3">ศูนย์กลางระบบจัดการ</h1>
+    <p class="lead text-muted">เข้าถึงฟังก์ชันการทำงานทั้งหมดได้ที่นี่</p>
+    <div class="mx-auto" style="width: 150px; height: 4px; background: linear-gradient(to right, #1a237e, #5c6bc0); margin: 2rem auto;"></div>
+  </div>
+
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+    {% if user.is_authenticated %}
+      {% if not user.is_superuser %}
+        <!-- สำหรับผู้ใช้ทั่วไป แสดงเฉพาะปุ่มแดชบอร์ดส่วนตัว -->
+        <div class="col">
+          <div class="card h-100 menu-card bg-light border-0">
+            <a href="{% url 'dashboard' %}" class="btn menu-btn text-white h-100" style="background: linear-gradient(45deg, #1976d2, #64b5f6);">
+              <i class="fas fa-user-circle"></i>
+              <span>แดชบอร์ดส่วนตัว</span>
+              <div class="mt-2 small opacity-75">ดูข้อมูลของคุณ</div>
+            </a>
+          </div>
+        </div>
+      {% endif %}
+      
+      {% if has_admin_rights %}
+        <!-- สำหรับผู้ใช้ที่มีสิทธิ์แอดมิน (บัญชีหรือ superuser) -->
+        <div class="col">
+          <div class="card h-100 menu-card border-0">
+            <a href="{% url 'checkin' %}" class="btn menu-btn text-white h-100" style="background: linear-gradient(45deg, #2ecc71, #a5d6a7);">
+              <i class="fas fa-clipboard-check"></i>
+              <span>เช็คชื่อพนักงาน</span>
+              <div class="mt-2 small opacity-75">จัดการการเข้างาน</div>
+            </a>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card h-100 menu-card border-0">
+            <a href="{% url 'withdraw_form' %}" class="btn menu-btn text-white h-100" style="background: linear-gradient(45deg, #e74c3c, #ff7675);">
+              <i class="fas fa-money-bill-wave"></i>
+              <span>เบิกเงิน</span>
+              <div class="mt-2 small opacity-75">ทำรายการเบิกเงิน</div>
+            </a>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card h-100 menu-card border-0">
+            <a href="{% url 'loan_form' %}" class="btn menu-btn text-white h-100" style="background: linear-gradient(45deg, #f39c12, #ffd54f);">
+              <i class="fas fa-hand-holding-usd"></i>
+              <span>กู้เงิน</span>
+              <div class="mt-2 small opacity-75">จัดการการกู้เงิน</div>
+            </a>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card h-100 menu-card border-0">
+            <a href="{% url 'com_calc' %}" class="btn menu-btn text-white h-100" style="background: linear-gradient(45deg, #00bcd4, #80deea);">
+              <i class="fas fa-calculator"></i>
+              <span>คำนวณหัวคิว</span>
+              <div class="mt-2 small opacity-75">คำนวณอัตราค่าตอบแทน</div>
+            </a>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card h-100 menu-card border-0">
+            <a href="{% url 'salary_list' %}" class="btn menu-btn text-white h-100" style="background: linear-gradient(45deg, #6c757d, #adb5bd);">
+              <i class="fas fa-file-invoice-dollar"></i>
+              <span>เงินเดือน</span>
+              <div class="mt-2 small opacity-75">จัดการเงินเดือนพนักงาน</div>
+            </a>
+          </div>
+        </div>
+      {% endif %}
+      
+      {% if user.is_superuser %}
+        <!-- สำหรับ superuser เท่านั้น -->
+        <div class="col">
+          <div class="card h-100 menu-card border-0">
+            <a href="{% url 'employee_list' %}" class="btn menu-btn text-white h-100" style="background: linear-gradient(45deg, #343a40, #6c757d);">
+              <i class="fas fa-users"></i>
+              <span>จัดการพนักงาน</span>
+              <div class="mt-2 small opacity-75">เพิ่ม/แก้ไขข้อมูลพนักงาน</div>
+            </a>
+          </div>
+        </div>
+        <!-- เพิ่มปุ่มดู Log สำหรับ superuser -->
+        <div class="col">
+          <div class="card h-100 menu-card border-0">
+            <a href="{% url 'admin_log' %}" class="btn menu-btn text-white h-100" style="background: linear-gradient(45deg, #6f42c1, #b39ddb);">
+              <i class="fas fa-chart-line"></i>
+              <span>ประวัติการใช้งาน</span>
+              <div class="mt-2 small opacity-75">ดูประวัติการใช้งานระบบ</div>
+            </a>
+          </div>
+        </div>
+      {% endif %}
+    {% endif %}
+  </div>
+  
+  <!-- ส่วนบอกคำแนะนำ -->
+  <div class="mt-5 mb-3 text-center">
+    <div class="card p-4 border-0 shadow-sm bg-light">
+      <h5 class="mb-3"><i class="fas fa-info-circle text-primary me-2"></i>คำแนะนำการใช้งาน</h5>
+      <p class="text-muted mb-0">เลือกเมนูที่ต้องการจากปุ่มด้านบน ระบบจะนำทางคุณไปยังหน้าที่เกี่ยวข้อง<br>ถ้าต้องการความช่วยเหลือเพิ่มเติม โปรดติดต่อผู้ดูแลระบบ</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

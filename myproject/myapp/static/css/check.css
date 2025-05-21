@@ -1,0 +1,246 @@
+body {
+    background-color: #f0f5fa; /* สีฟ้าอ่อนเพื่อความสบายตา */
+}
+
+/* ปรับขนาดและสัดส่วนของตาราง */
+.attendance-table {
+    table-layout: fixed;
+    width: 100%;
+    max-width: none; 
+    border-collapse: collapse;
+    font-size: 0.75rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05);
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.attendance-table th,
+.attendance-table td {
+    vertical-align: middle;
+    text-align: center;
+    padding: 4px;
+    height: 15px;   /* 👈 สูงขึ้น */
+    width: 45px;    /* 👈 กว้างขึ้น */
+    min-width: 45px;
+    max-width: 45px;
+    font-size: 0.8rem; /* ตัวใหญ่ขึ้นนิดนึง */
+    overflow: hidden;
+}
+
+.attendance-table th:first-child,
+.attendance-table td:first-child {
+    text-align: left;
+    padding-left: 8px;
+    min-width: 100px; /* ช่องชื่อพนักงานกว้างพอดี */
+    width: 100px;
+}
+
+.attendance-table thead th {
+    background-color: #f8f9fa;
+    font-weight: 500;
+}
+
+/* ช่องวันหยุด */
+.holiday {
+    background-color: #ffdddd;
+    color: #cc0000;
+}
+
+/* สัญลักษณ์ครึ่งวัน / เต็มวัน / ขาด */
+.full-day-marker {
+    color: #198754;
+    font-weight: bold;
+    font-size: 14px;
+}
+.half-day-marker {
+    color: #fd7e14;
+    font-weight: bold;
+    font-size: 14px;
+}
+.absent-marker {
+    color: #adb5bd;
+    font-size: 14px;
+}
+
+/* สีตามวัน */
+th.day-0, td.day-0 { background-color: #ffe5d9; }  /* อาทิตย์ - ส้มอ่อน */
+th.day-1, td.day-1 { background-color: #d0ebff; }  /* จันทร์ - ฟ้าอ่อน */
+th.day-2, td.day-2 { background-color: #e3fcec; }  /* อังคาร - เขียวอ่อน */
+th.day-3, td.day-3 { background-color: #f8f0fc; }  /* พุธ - ม่วงอ่อน */
+th.day-4, td.day-4 { background-color: #fff3bf; }  /* พฤหัส - เหลือง */
+th.day-5, td.day-5 { background-color: #fce4ec; }  /* ศุกร์ - ชมพู */
+th.day-6, td.day-6 { background-color: #f1f3f5; }  /* เสาร์ - เทาอ่อน */
+
+.holiday {
+    background-color: #ffcccc !important;  /* สีแดงอ่อนเข้มขึ้น */
+    color: #990000;
+}
+
+/* สไตล์สำหรับเช็คครึ่งวัน */
+.attendance-options {
+    display: flex;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.attendance-cell {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.attendance-cell:hover:not(.holiday) {
+    box-shadow: inset 0 0 0 2px #007bff;
+}
+
+/* สัญลักษณ์ต่างๆ */
+.full-day-marker {
+    display: inline-block;
+    color: #198754;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.half-day-marker {
+    display: inline-block;
+    color: #fd7e14;
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.absent-marker {
+    display: inline-block;
+    color: #9e9e9e;
+    font-weight: normal;
+}
+
+/* ปรับขนาดตามหน้าจอ */
+@media (max-width: 768px) {
+    .attendance-table {
+        font-size: 0.75rem;
+    }
+
+    .attendance-table th,
+    .attendance-table td {
+        padding: 1px;
+        height: 25px;
+        width: 25px;
+        min-width: 25px;
+        max-width: 25px;
+    }
+
+    .attendance-table th:first-child,
+    .attendance-table td:first-child {
+        min-width: 120px;
+        width: 120px !important;
+    }
+}
+
+/* โหมดแก้ไข */
+.edit-mode-active .attendance-cell:not(.holiday) {
+    cursor: pointer;
+    position: relative;
+}
+
+.edit-mode-active .attendance-cell:not(.holiday)::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border: 1px dashed #007bff;
+    pointer-events: none;
+    opacity: 0.3;
+}
+
+.edit-mode-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.edit-mode-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.edit-mode-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.edit-mode-slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+input:checked + .edit-mode-slider {
+    background-color: #2196F3;
+}
+
+input:checked + .edit-mode-slider:before {
+    transform: translateX(26px);
+}
+
+/* ปรับสำหรับตารางวันหยุด */
+#day_off_list {
+    font-size: 0.85rem;
+}
+
+#day_off_list li {
+    padding: 4px 6px;
+}
+
+/* ปุ่มต่างๆ */
+#saveAttendanceBtn {
+    border-radius: 4px;
+    padding: 8px 24px;
+    font-weight: bold;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+#saveAttendanceBtn:hover {
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    transform: translateY(-1px);
+}
+
+/* ปรับแต่งการ์ดวันหยุด */
+.holiday-sidebar {
+    border-radius: 0.75rem;
+    overflow: hidden;
+}
+
+.holiday-sidebar .card-header {
+    font-weight: 600;
+    font-size: 1rem;
+}
+
+.compact-form label {
+    font-weight: 500;
+}
+
+.delete-btn {
+    line-height: 1;
+}
+
+/* ปรับปุ่มกลุ่มด้านบน */
+.btn-group-sm .btn {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.4rem;
+}

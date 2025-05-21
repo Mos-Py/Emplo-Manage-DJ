@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Logs การทำงาน{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+  <h2 class="mb-4 text-center">📊 Logs การทำงานของระบบ</h2>
+  
+  <div class="row row-cols-1 row-cols-md-2 g-4 text-center">
+    <div class="col">
+      <a href="{% url 'dashboard_logs' %}" class="btn btn-primary w-100 py-3">👤 แดชบอร์ด</a>
+    </div>
+    <div class="col">
+      <a href="{% url 'checkin_logs' %}" class="btn btn-success w-100 py-3">📝 เช็คชื่อพนักงาน</a>
+    </div>
+    <div class="col">
+      <a href="{% url 'withdraw_logs' %}" class="btn btn-danger w-100 py-3">💸 เบิกเงิน</a>
+    </div>
+    <div class="col">
+      <a href="{% url 'loan_logs' %}" class="btn btn-warning w-100 py-3">💰 กู้เงิน</a>
+    </div>
+    <div class="col">
+      <a href="{% url 'calc_logs' %}" class="btn btn-info w-100 py-3">🧮 คำนวณหัวคิว</a>
+    </div>
+    <div class="col">
+      <a href="{% url 'salary_logs' %}" class="btn btn-secondary w-100 py-3">💵 เงินเดือน</a>
+    </div>
+    <div class="col">
+      <a href="{% url 'employee_logs' %}" class="btn btn-dark w-100 py-3">👥 จัดการพนักงาน</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

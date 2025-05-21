@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}ระบบเบิกเงิน{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-start mb-4 gap-4 fs-5">
+        <span id="btnWithdraw" style="cursor: pointer; font-weight: bold; color: #000;">เบิกเงิน</span>
+        <span id="btnLoan" style="cursor: pointer; color: gray;">กู้เงิน</span>
+    </div>
+
+    <div class="row">
+        <!-- ฟอร์มเบิกเงิน -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header text-center text-white" style="background-color: #00bcd4;">
+                    <h5 class="mb-0">ระบบเบิกเงิน</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'save_fee' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="fee_status" value="0">
+
+                        <div class="mb-3">
+                            <label for="fee_date" class="form-label">วันที่</label>
+                            <input type="date" id="fee_date" name="fee_date" class="form-control" value="{{ today|date:'Y-m-d' }}" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="person" class="form-label">ชื่อ</label>
+                            <select class="form-select" id="person" name="person" required>
+                                <option value="">-- เลือกพนักงาน --</option>
+                                {% for person in persons %}
+                                    <option value="{{ person.id }}">
+                                        {{ person.get_title_display }} {{ person.first_name }} {{ person.last_name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="amount" class="form-label">จำนวนเงิน</label>
+                            <input type="number" class="form-control" id="amount" name="amount" required min="1">
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="description" class="form-label">หมายเหตุ</label>
+                            <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                        </div>
+
+                        <div class="text-end">
+                            <button type="submit" class="btn btn-secondary">บันทึก</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- แสดงประวัติการเบิก -->
+        <div class="col-md-6 mb-4">
+            <div class="card">
+                <div class="card-header text-center text-white" style="background-color: #dc3545;">
+                    <h5 class="mb-0">ประวัติการเบิก</h5>
+                </div>
+                <div class="card-body bg-light">
+                    <div class="mb-3">
+                        <label for="month_filter" class="form-label">เลือกเดือน</label>
+                        <input type="month" id="month_filter" class="form-control" value="{{ today|date:'Y-m' }}">
+                    </div>
+
+                    <div class="mb-3 text-muted">
+                        (ยังไม่มีการแสดงผล — จะแสดงเมื่อเลือกชื่อพนักงาน)
+                    </div>
+
+                    <div class="text-center fw-bold">
+                        ยอดรวม: <span id="total-summary">0</span> บาท
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/withdraw.js' %}"></script>
+<script>
+    document.getElementById("btnWithdraw").addEventListener("click", function() {
+        window.location.href = "{% url 'withdraw_form' %}";  
+    });
+
+    document.getElementById("btnLoan").addEventListener("click", function() {
+        window.location.href = "{% url 'loan_form' %}";  
+    });
+</script>
+{% endblock %}

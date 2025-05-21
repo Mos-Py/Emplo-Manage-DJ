@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{% if form.instance.id %}แก้ไขข้อมูลพนักงาน{% else %}เพิ่มพนักงานใหม่{% endif %}{% endblock %}
+{% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-lg-10">
+      <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+          <h4>{% if form.instance.id %}แก้ไขข้อมูลพนักงาน{% else %}เพิ่มพนักงานใหม่{% endif %}</h4>
+        </div>
+        <div class="card-body">
+          <!-- Debug Panel -->
+          {% if debug %}
+          <div class="alert alert-info mb-3">
+            <h5>DEBUG - Template Variables:</h5>
+            <p>is_superuser: {{ is_superuser }}</p>
+            <p>has_admin_rights: {{ has_admin_rights }}</p>
+            <p>is_regular_user: {{ is_regular_user }}</p>
+          </div>
+          {% endif %}
+          
+          <form method="post" class="needs-validation" novalidate>
+            {% csrf_token %}
+            
+            <!-- แสดงข้อความแจ้งเตือนถ้ามี -->
+            {% if form.errors %}
+              <div class="alert alert-danger">
+                <strong>พบข้อผิดพลาด:</strong> กรุณาตรวจสอบข้อมูลที่กรอกให้ถูกต้อง
+              </div>
+            {% endif %}
+            
+            <!-- ส่วนของข้อมูลผู้ใช้ (แสดงเฉพาะเมื่อเพิ่มใหม่) -->
+            {% if not form.instance.id %}
+              <div class="card mb-3">
+                <div class="card-header bg-light">ข้อมูลเข้าสู่ระบบ</div>
+                <div class="card-body">
+                  <div class="row">
+                    <div class="col-md-6 mb-3">
+                      <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label }}*</label>
+                      {{ form.username }}
+                      {% if form.username.errors %}
+                        <div class="text-danger">{{ form.username.errors }}</div>
+                      {% endif %}
+                    </div>
+                    <div class="col-md-6 mb-3">
+                      <label for="{{ form.password.id_for_label }}" class="form-label">{{ form.password.label }}*</label>
+                      {{ form.password }}
+                      {% if form.password.errors %}
+                        <div class="text-danger">{{ form.password.errors }}</div>
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+            
+            <!-- ส่วนของข้อมูลพื้นฐาน -->
+            <div class="card mb-3">
+              <div class="card-header bg-light">ข้อมูลพื้นฐาน</div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-4 mb-3">
+                    <label for="{{ form.title.id_for_label }}" class="form-label">{{ form.title.label }}*</label>
+                    {{ form.title }}
+                    {% if form.title.errors %}
+                      <div class="text-danger">{{ form.title.errors }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <label for="{{ form.gender.id_for_label }}" class="form-label">{{ form.gender.label }}*</label>
+                    {{ form.gender }}
+                    {% if form.gender.errors %}
+                      <div class="text-danger">{{ form.gender.errors }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="col-md-4 mb-3">
+                    <label for="{{ form.date_of_birth.id_for_label }}" class="form-label">{{ form.date_of_birth.label }}*</label>
+                    {{ form.date_of_birth }}
+                    {% if form.date_of_birth.errors %}
+                      <div class="text-danger">{{ form.date_of_birth.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+                
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="{{ form.first_name.id_for_label }}" class="form-label">{{ form.first_name.label }}*</label>
+                    {{ form.first_name }}
+                    {% if form.first_name.errors %}
+                      <div class="text-danger">{{ form.first_name.errors }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label for="{{ form.last_name.id_for_label }}" class="form-label">{{ form.last_name.label }}*</label>
+                    {{ form.last_name }}
+                    {% if form.last_name.errors %}
+                      <div class="text-danger">{{ form.last_name.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+                
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="{{ form.id_card_number.id_for_label }}" class="form-label">{{ form.id_card_number.label }}</label>
+                    {{ form.id_card_number }}
+                    {% if form.id_card_number.errors %}
+                      <div class="text-danger">{{ form.id_card_number.errors }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="col-md-6 mb-3">
+                    <label for="{{ form.nationality.id_for_label }}" class="form-label">{{ form.nationality.label }}</label>
+                    {{ form.nationality }}
+                    {% if form.nationality.errors %}
+                      <div class="text-danger">{{ form.nationality.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+                
+                <div class="row">
+                  <div class="col-md-12 mb-3">
+                    <label for="{{ form.address.id_for_label }}" class="form-label">{{ form.address.label }}</label>
+                    {{ form.address }}
+                    {% if form.address.errors %}
+                      <div class="text-danger">{{ form.address.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- ส่วนของข้อมูลการทำงาน (แสดงเฉพาะ superuser หรือ admin) -->
+            {% if is_superuser or has_admin_rights %}
+            <div class="card mb-3">
+              <div class="card-header bg-light">ข้อมูลการทำงาน</div>
+              <div class="card-body">
+                <div class="row">
+                  <div class="col-md-6 mb-3">
+                    <label for="{{ form.Role.id_for_label }}" class="form-label">{{ form.Role.label }}*</label>
+                    {{ form.Role }}
+                    {% if form.Role.errors %}
+                      <div class="text-danger">{{ form.Role.errors }}</div>
+                    {% endif %}
+                  </div>
+                  <div class="col-md-6 mb-3 driver-field">
+                    <label for="{{ form.concrete_mixer_numbers.id_for_label }}" class="form-label">{{ form.concrete_mixer_numbers.label }}</label>
+                    {{ form.concrete_mixer_numbers }}
+                    {% if form.concrete_mixer_numbers.errors %}
+                      <div class="text-danger">{{ form.concrete_mixer_numbers.errors }}</div>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="row">
+                  <!-- เฉพาะ superuser เท่านั้นที่เห็นและแก้ไขฟิลด์ salary ได้ -->
+                  {% if is_superuser %}
+                  <div class="col-md-6 mb-3">
+                    <label for="{{ form.salary.id_for_label }}" class="form-label">{{ form.salary.label }}*</label>
+                    {{ form.salary }}
+                    {% if form.salary.errors %}
+                      <div class="text-danger">{{ form.salary.errors }}</div>
+                    {% endif %}
+                    <div class="form-text text-muted">ค่าจ้างต่อวัน</div>
+                  </div>
+                  {% else %}
+                  <!-- สำหรับ admin/accountant ที่ไม่ใช่ superuser ให้ซ่อนฟิลด์ salary แต่ต้องส่งค่า -->
+                  {{ form.salary }}
+                  {% endif %}
+
+                  <!-- สถานะการทำงาน แสดงเสมอสำหรับ superuser และ admin -->
+                  {% if not form.instance.id %}
+                  <div class="col-md-6 mb-3" style="display: none;">
+                    <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}*</label>
+                    {{ form.status }}
+                  </div>
+                  {% else %}
+                  <div class="col-md-6 mb-3">
+                    <label for="{{ form.status.id_for_label }}" class="form-label">{{ form.status.label }}*</label>
+                    {{ form.status }}
+                    {% if form.status.errors %}
+                      <div class="text-danger">{{ form.status.errors }}</div>
+                    {% endif %}
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <!-- ผู้ใช้ธรรมดา - แก้ไขเป็นฟิลด์ซ่อนแทนการใช้ disabled -->
+            {% if form.instance.id %}
+              <!-- ฟิลด์ซ่อนสำหรับเก็บค่าเดิมสำหรับผู้ใช้ธรรมดา -->
+              <input type="hidden" name="Role" value="{{ form.instance.Role }}">
+              <input type="hidden" name="concrete_mixer_numbers" value="{{ form.instance.concrete_mixer_numbers }}">
+              <input type="hidden" name="salary" value="{{ form.instance.salary }}">
+              <input type="hidden" name="status" value="{{ form.instance.status }}">
+            {% else %}
+              {{ form.Role }}
+              {{ form.concrete_mixer_numbers }}
+              {{ form.salary }}
+              {{ form.status }}
+            {% endif %}
+            {% endif %}
+
+            <!-- ปุ่มส่งข้อมูล -->
+            <div class="d-flex justify-content-between">
+              {% if is_profile_edit %}
+              <!-- ถ้าเป็นการแก้ไขโปรไฟล์ ให้กลับไปหน้า dashboard -->
+              <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> กลับ
+              </a>
+              {% else %}
+              <a href="{% url 'employee_list' %}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left"></i> กลับ
+              </a>
+              {% endif %}
+              <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> บันทึกข้อมูล
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // debug
+    console.log("DEBUG - Template Variables:");
+    console.log("is_superuser: {{ is_superuser }}");
+    console.log("has_admin_rights: {{ has_admin_rights }}");
+    console.log("is_regular_user: {{ is_regular_user }}");
+    
+    // แสดง/ซ่อนฟิลด์ concrete_mixer_numbers ตามตำแหน่งที่เลือก
+    const roleField = document.getElementById('id_Role');
+    const driverFields = document.querySelectorAll('.driver-field');
+    
+    function toggleDriverFields() {
+      if(!roleField) return; // ตรวจสอบว่ามีฟิลด์นี้หรือไม่
+      
+      const isDriver = roleField.value === 'Concrete Mixer Driver';
+      driverFields.forEach(field => {
+        field.style.display = isDriver ? 'block' : 'none';
+      });
+    }
+    
+    // ทำงานเมื่อโหลดหน้าและเมื่อมีการเปลี่ยนค่า
+    toggleDriverFields();
+    if(roleField) {
+      roleField.addEventListener('change', toggleDriverFields);
+    }
+    
+    // คำนวณเงินเดือนอัตโนมัติเมื่อมีการเปลี่ยนแปลงค่าจ้างต่อวัน
+    const salaryField = document.getElementById('id_salary');
+    
+    if(salaryField) {
+      salaryField.addEventListener('input', function() {
+        // แสดงตัวอย่างเงินเดือนอัตโนมัติ
+        let workingDays = 26; // ค่าเริ่มต้น
+        
+        if (roleField && roleField.value === 'Accountant') {
+          workingDays = 22; // พนักงานบัญชีทำงาน 22 วันต่อเดือน (จันทร์-ศุกร์)
+        }
+        
+        // คำนวณเงินเดือน
+        const dailyWage = parseFloat(salaryField.value) || 0;
+        const monthlySalary = (dailyWage * workingDays).toFixed(2);
+        
+        // แสดงเงินเดือนที่คำนวณได้
+        const displayElem = document.querySelector('.form-text.text-muted');
+        if (displayElem) {
+          displayElem.textContent = `ค่าจ้างต่อวัน (เงินเดือนประมาณ ${monthlySalary} บาท)`;
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

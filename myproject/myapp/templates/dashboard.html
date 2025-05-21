@@ -1,0 +1,285 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}แดชบอร์ด{% endblock %}
+
+{% block head_extra %}
+<!-- นำเข้า base.css ก่อน dashboard.css เพื่อให้ dashboard.css สามารถ override ได้ -->
+<link rel="stylesheet" href="{% static 'css/base.css' %}">
+<link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  {% if request.user.is_superuser %}
+  <div class="alert alert-info" style="font-size: 12px;">
+    <h6>Debug Info (เฉพาะ super_user เห็น)</h6>
+    <ul>
+      <li>Current date: {{ current_month|date:"Y-m-d" }}</li>
+      <li>Person ID: {{ person.id }}</li>
+      <li>API URL: {{ api_url }}</li>
+      <li>Workdays this month (raw): {{ workdays_this_month }}</li>
+      <li>เช็คชื่อล่าสุด: {{ last_checkin.date|default:"ไม่มีข้อมูล" }}</li>
+      <li>
+        Workdays ในเดือนนี้: 
+        {% for w in workdays_debug %}
+          {{ w.date|date:"j" }} ({% if w.full_day %}เต็มวัน{% else %}ครึ่งวัน{% endif %}){% if not forloop.last %}, {% endif %}
+        {% empty %}
+          ไม่มีข้อมูล
+        {% endfor %}
+      </li>
+    </ul>
+    <button class="btn btn-sm btn-primary" onclick="testAPI()">ทดสอบ API</button>
+  </div>
+
+  <script>
+    function testAPI() {
+      fetch('{{ api_url }}')
+        .then(response => {
+          if (!response.ok) {
+            throw new Error('Network response was not ok ' + response.statusText);
+          }
+          return response.json();
+        })
+        .then(data => {
+          alert('API Response: ' + JSON.stringify(data, null, 2));
+        })
+        .catch(error => {
+          alert('Error calling API: ' + error.message);
+        });
+    }
+  </script>
+  {% endif %}
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="mb-0">
+      สวัสดีคุณ {{ person.first_name }} {{ person.last_name }}
+    </h2>
+    <div class="status-badge {% if person.status == 1 %}bg-success text-white{% else %}bg-danger text-white{% endif %}">
+      <i class="fas {% if person.status == 1 %}fa-check-circle{% else %}fa-times-circle{% endif %}"></i>
+      {{ person.get_status_display_thai }}
+    </div>
+  </div>
+  
+  <div class="row mb-4">
+    <!-- วันทำงานเดือนนี้ -->
+    <div class="col-md-3 col-6 mb-4">
+      <div class="dashboard-card">
+        <div class="stat-card">
+          <div class="stat-icon text-primary">
+            <i class="fas fa-calendar-check"></i>
+          </div>
+          <div class="stat-title">วันทำงานเดือนนี้</div>
+          <div class="stat-value">
+            {% if workdays_this_month is not None %}
+              {{ workdays_this_month }}
+            {% else %}
+              0
+            {% endif %}
+            <small>วัน</small>
+          </div>
+        </div>
+      </div>
+    </div>
+      
+    <!-- ค่าจ้างต่อวัน -->
+    <div class="col-md-3 col-6 mb-4">
+      <div class="dashboard-card">
+        <div class="stat-card">
+          <div class="stat-icon text-success">
+            <i class="fas fa-coins"></i>
+          </div>
+          <div class="stat-title">ค่าจ้างต่อวัน</div>
+          <div class="stat-value">{{ person.salary|floatformat:2 }} <small>บาท</small></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- เงินเดือนประมาณการ -->
+    <div class="col-md-3 col-6 mb-4">
+      <div class="dashboard-card">
+        <div class="stat-card">
+          <div class="stat-icon text-warning">
+            <i class="fas fa-calculator"></i>
+          </div>
+          <div class="stat-title">เงินเดือนประมาณการ</div>
+          <div class="stat-value">{{ estimated_salary|floatformat:2 }} <small>บาท</small></div>
+          <div class="stat-meta"><small>จำนวนวัน x ค่าจ้างนายวัน</small></div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- เงินเดือนล่าสุด -->
+    <div class="col-md-3 col-6 mb-4">
+      <div class="dashboard-card">
+        <div class="stat-card">
+          <div class="stat-icon text-info">
+            <i class="fas fa-money-bill-wave"></i>
+          </div>
+          <div class="stat-title">เงินเดือนล่าสุด</div>
+          <div class="stat-value">
+            {% if latest_salary %}
+              {{ latest_salary|floatformat:2 }} <small>บาท</small>
+            {% else %}
+              - <small>บาท</small>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="row">
+    <!-- ข้อมูลพนักงาน -->
+    <div class="col-lg-4 mb-4">
+      <div class="dashboard-card">
+        <div class="card-header d-flex align-items-center">
+          <i class="fas fa-user me-2 text-primary"></i>
+          <h5>ข้อมูลพนักงาน</h5>
+        </div>
+        <div class="card-body">
+          <div class="info-item">
+            <div class="info-label">ตำแหน่ง</div>
+            <div class="info-value">
+              {{ person.get_thai_role }}
+              {% if person.Role == 'Concrete Mixer Driver' and person.concrete_mixer_numbers %}
+                {{ person.concrete_mixer_numbers }}
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="info-item">
+            <div class="info-label">วันเกิด</div>
+            <div class="info-value">{{ person.date_of_birth|date:"j F Y" }} ({{ person.get_age }} ปี)</div>
+          </div>
+          
+          <div class="info-item">
+            <div class="info-label">เพศ</div>
+            <div class="info-value">
+              {% if person.get_thai_gender %}
+                {{ person.get_thai_gender }}
+              {% else %}
+                {% if person.gender == 'M' %}
+                  ชาย
+                {% elif person.gender == 'F' %}
+                  หญิง
+                {% elif person.gender == 'O' %}
+                  อื่นๆ
+                {% else %}
+                  {{ person.gender|default:"-" }}
+                {% endif %}
+              {% endif %}
+            </div>
+          </div>
+          
+          <div class="info-item">
+            <div class="info-label">เลขบัตรประชาชน</div>
+            <div class="info-value">{{ person.id_card_number|default:"-" }}</div>
+          </div>
+          
+          <div class="info-item">
+            <div class="info-label">สัญชาติ</div>
+            <div class="info-value">{{ person.nationality }}</div>
+          </div>
+          
+          {% if person.Role == 'Concrete Mixer Driver' %}
+            <div class="info-item">
+              <div class="info-label">คิวเดือนนี้</div>
+              <div class="info-value">{{ queue_total|default:"0" }} คิว</div>
+            </div>
+          {% endif %}
+          
+          {% if person.address %}
+            <div class="info-item">
+              <div class="info-label">ที่อยู่</div>
+              <div class="info-value">{{ person.address }}</div>
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    
+    <div class="col-lg-8">
+      <div class="row">
+        <!-- สถานะปัจจุบัน -->
+        <div class="col-md-12 mb-4">
+          <div class="dashboard-card">
+            <div class="card-header d-flex align-items-center">
+              <i class="fas fa-info-circle me-2 text-info"></i>
+              <h5>สถานะปัจจุบัน</h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <div class="info-item">
+                    <div class="info-label">การเช็คชื่อล่าสุด</div>
+                    <div class="info-value">
+                      {% if last_checkin %}
+                        {{ last_checkin.date|date:"j F Y" }}
+                        {% if last_checkin.status == 1 %}
+                          <span class="badge bg-success">มาทำงาน</span>
+                        {% else %}
+                          <span class="badge bg-danger">ไม่มาทำงาน</span>
+                        {% endif %}
+                      {% else %}
+                        ไม่มีข้อมูล
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                  <div class="info-item">
+                    <div class="info-label">ยอดกู้คงเหลือ</div>
+                    <div class="info-value">
+                      {% if loan_remaining > 0 %}
+                        {{ loan_remaining|floatformat:2 }} บาท
+                      {% else %}
+                        - บาท
+                      {% endif %}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- เมนูด่วน -->
+        <div class="col-md-12 mb-4">
+          <div class="dashboard-card">
+            <div class="card-header d-flex align-items-center">
+              <i class="fas fa-tasks me-2 text-warning"></i>
+              <h5>เมนูด่วน</h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-lg-12">
+                  <!-- ใช้คลาส dashboard-menu-btn เพื่อหลีกเลี่ยงการขัดแย้งกับ menu-btn ใน base.css -->
+                  <a href="{% url 'employee_edit' person_id=person.id %}" class="menu-btn">
+                    <i class="fas fa-user-edit text-primary"></i> แก้ไขข้อมูลส่วนตัว
+                  </a>
+                </div>
+              </div>
+              
+              {% if user.is_superuser %}                 
+                  {% if not is_admin_view %}
+                  <a href="{% url 'employee_list' %}" class="btn btn-danger btn-sm">
+                    <i class="fas fa-users-cog me-1"></i> จัดการพนักงาน
+                  </a>
+                  {% endif %}
+                </div>
+              
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/dashboard.js' %}"></script>
+{% endblock %}
