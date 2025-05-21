@@ -29,10 +29,10 @@ class Person(models.Model):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     date_of_birth = models.DateField()
-    # เพิ่มฟิลด์ใหม่
     id_card_number = models.CharField(max_length=13, blank=True, verbose_name="เลขบัตรประชาชน")
     nationality = models.CharField(max_length=50, default="ไทย", verbose_name="สัญชาติ")
     address = models.TextField(blank=True, verbose_name="ที่อยู่")
+    phone_number = models.CharField(max_length=15, blank=True, verbose_name="เบอร์โทรศัพท์")
     
     ROLE_CHOICES = [
         ('Employee', 'พนักงานทั่วไป'),
