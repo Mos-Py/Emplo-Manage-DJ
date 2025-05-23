@@ -1,0 +1,369 @@
+<!-- Notification Widget สำหรับ Superuser - ใส่ใน base.html -->
+{% if user.is_superuser %}
+<style>
+/* Notification Widget Styles */
+.notification-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1050;
+}
+
+.notification-toggle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    color: white;
+    font-size: 24px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transition: all 0.3s ease;
+    position: relative;
+    cursor: pointer;
+}
+
+.notification-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+}
+
+.notification-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.notification-panel {
+    position: absolute;
+    bottom: 70px;
+    right: 0;
+    width: 350px;
+    max-height: 500px;
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    border: 1px solid #e9ecef;
+    display: none;
+    overflow: hidden;
+}
+
+.notification-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px 20px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notification-body {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 15px 20px;
+    border-bottom: 1px solid #f8f9fa;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.notification-item:hover {
+    background-color: #f8f9fa;
+}
+
+.notification-item:last-child {
+    border-bottom: none;
+}
+
+.notification-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #ffc107;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    font-size: 16px;
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 4px;
+    color: #333;
+}
+
+.notification-message {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.notification-time {
+    font-size: 11px;
+    color: #999;
+}
+
+.notification-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.notification-footer {
+    padding: 10px 20px;
+    background: #f8f9fa;
+    text-align: center;
+}
+
+.notification-footer a {
+    color: #667eea;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+}
+
+.notification-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .notification-panel {
+        width: 300px;
+        right: -20px;
+    }
+    
+    .notification-widget {
+        bottom: 15px;
+        right: 15px;
+    }
+}
+</style>
+
+<!-- Notification Widget -->
+<div class="notification-widget">
+    <!-- Toggle Button -->
+    <button class="notification-toggle" id="notificationToggle">
+        <i class="fas fa-bell"></i>
+        <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+    </button>
+    
+    <!-- Notification Panel -->
+    <div class="notification-panel" id="notificationPanel">
+        <!-- Header -->
+        <div class="notification-header">
+            <div>
+                <i class="fas fa-bell me-2"></i>
+                การแจ้งเตือน
+            </div>
+            <button class="btn btn-sm btn-link text-white p-0" onclick="closeNotifications()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        
+        <!-- Body -->
+        <div class="notification-body" id="notificationList">
+            <!-- Loading -->
+            <div class="notification-empty">
+                <i class="fas fa-spinner fa-spin"></i>
+                <div class="mt-2">กำลังโหลด...</div>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <div class="notification-footer">
+            <a href="{% url 'admin_password_requests' %}">
+                <i class="fas fa-list me-1"></i>
+                ดูทั้งหมด
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+// Notification Widget JavaScript
+let notificationPanel = null;
+let notificationCount = 0;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initNotificationWidget();
+    loadNotifications();
+    
+    // Auto refresh ทุก 30 วินาที
+    setInterval(loadNotifications, 30000);
+});
+
+function initNotificationWidget() {
+    const toggle = document.getElementById('notificationToggle');
+    const panel = document.getElementById('notificationPanel');
+    
+    toggle.addEventListener('click', function() {
+        const isVisible = panel.style.display === 'block';
+        if (isVisible) {
+            closeNotifications();
+        } else {
+            openNotifications();
+        }
+    });
+    
+    // ปิดเมื่อคลิกนอก widget
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.notification-widget')) {
+            closeNotifications();
+        }
+    });
+}
+
+function openNotifications() {
+    document.getElementById('notificationPanel').style.display = 'block';
+    loadNotifications(); // Refresh เมื่อเปิด
+}
+
+function closeNotifications() {
+    document.getElementById('notificationPanel').style.display = 'none';
+}
+
+function loadNotifications() {
+    fetch('/api/notifications/')
+        .then(response => response.json())
+        .then(data => {
+            updateNotificationCount(data.count);
+            renderNotifications(data.notifications);
+        })
+        .catch(error => {
+            console.error('Error loading notifications:', error);
+            renderError();
+        });
+}
+
+function updateNotificationCount(count) {
+    notificationCount = count;
+    const badge = document.getElementById('notificationBadge');
+    
+    if (count > 0) {
+        badge.textContent = count > 99 ? '99+' : count;
+        badge.style.display = 'flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+function renderNotifications(notifications) {
+    const container = document.getElementById('notificationList');
+    
+    if (notifications.length === 0) {
+        container.innerHTML = `
+            <div class="notification-empty">
+                <i class="fas fa-check-circle text-success fa-2x"></i>
+                <div class="mt-2">ไม่มีการแจ้งเตือน</div>
+                <small>ทุกคำขอได้รับการดำเนินการแล้ว</small>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    notifications.forEach(notification => {
+        html += renderNotificationItem(notification);
+    });
+    
+    container.innerHTML = html;
+}
+
+function renderNotificationItem(notification) {
+    const timeAgo = getTimeAgo(notification.created_at);
+    
+    return `
+        <div class="notification-item d-flex" onclick="handleNotificationClick('${notification.type}', ${notification.id})">
+            <div class="notification-icon">
+                <i class="fas fa-key"></i>
+            </div>
+            <div class="notification-content">
+                <div class="notification-title">${notification.title}</div>
+                <div class="notification-message">${notification.message}</div>
+                ${notification.note ? `<div class="notification-message"><small><i class="fas fa-comment"></i> ${notification.note}</small></div>` : ''}
+                <div class="notification-time">${timeAgo}</div>
+            </div>
+        </div>
+    `;
+}
+
+function handleNotificationClick(type, id) {
+    if (type === 'password_reset') {
+        // ไปหน้าจัดการคำขอ
+        window.location.href = '{% url "admin_password_requests" %}';
+    }
+    closeNotifications();
+}
+
+function getTimeAgo(dateString) {
+    if (!dateString) return 'ไม่ทราบเวลา';
+    
+    try {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffInSeconds = Math.floor((now - date) / 1000);
+        
+        if (diffInSeconds < 60) {
+            return 'เมื่อสักครู่';
+        } else if (diffInSeconds < 3600) {
+            const minutes = Math.floor(diffInSeconds / 60);
+            return `${minutes} นาทีที่แล้ว`;
+        } else if (diffInSeconds < 86400) {
+            const hours = Math.floor(diffInSeconds / 3600);
+            return `${hours} ชั่วโมงที่แล้ว`;
+        } else {
+            const days = Math.floor(diffInSeconds / 86400);
+            return `${days} วันที่แล้ว`;
+        }
+    } catch (error) {
+        return 'ไม่ทราบเวลา';
+    }
+}
+
+function renderError() {
+    document.getElementById('notificationList').innerHTML = `
+        <div class="notification-empty">
+            <i class="fas fa-exclamation-triangle text-warning fa-2x"></i>
+            <div class="mt-2">เกิดข้อผิดพลาด</div>
+            <small>ไม่สามารถโหลดการแจ้งเตือนได้</small>
+        </div>
+    `;
+}
+
+// Export functions สำหรับใช้จากภายนอก
+window.notificationWidget = {
+    refresh: loadNotifications,
+    open: openNotifications,
+    close: closeNotifications
+};
+</script>
+{% endif %}

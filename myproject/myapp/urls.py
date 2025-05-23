@@ -5,7 +5,7 @@ from .views_extend.view_check import check_view, save_attendance, save_day_off
 from .views_extend.view_com_calc import (com_calc_view, save_queue_conditions, 
                                         load_queue_conditions, load_prev_queue_conditions,
                                         delete_all_queue_conditions)
-from .views_extend import view_withdraw, view_loan,view_employee
+from .views_extend import view_withdraw, view_loan,view_employee,view_password
 from .views_extend.view_employee import employee_list, employee_add, employee_edit, employee_profile_edit, employee_delete
 from .views_extend.view_dashboard import dashboard_view, admin_view_dashboard
 from .views_salary.view_salary import (salary_list_view, get_salary_info, get_withdraw_history, 
@@ -81,5 +81,18 @@ urlpatterns = [
     path('admin_log/calc/', calc_logs, name='calc_logs'),
     path('admin_log/salary/', salary_logs, name='salary_logs'),
     path('admin_log/employee/', employee_logs, name='employee_logs'),
+
+    # URLs สำหรับระบบจัดการรหัสผ่าน
+    path('password/change/', view_password.change_password_view, name='change_password'),
+    path('password/forgot/', view_password.forgot_password_view, name='forgot_password'),
+    
+    # URLs สำหรับ Admin จัดการคำขอรหัสผ่าน (เปลี่ยนจาก admin/ เป็น manage/)
+    path('manage/password-requests/', view_password.admin_password_requests_view, name='admin_password_requests'),
+    path('api/approve-request/', view_password.approve_request_ajax, name='approve_request'),
+    path('api/reject-request/', view_password.reject_request_ajax, name='reject_request'),
+    
+    # APIs สำหรับการแจ้งเตือน
+    path('api/notification-count/', view_password.get_notification_count, name='notification_count'),
+    path('api/notifications/', view_password.get_notifications, name='get_notifications'),
 
 ]

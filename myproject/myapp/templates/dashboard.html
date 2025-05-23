@@ -254,22 +254,45 @@
             </div>
             <div class="card-body">
               <div class="row">
-                <div class="col-lg-12">
-                  <!-- ใช้คลาส dashboard-menu-btn เพื่อหลีกเลี่ยงการขัดแย้งกับ menu-btn ใน base.css -->
+                <div class="col-lg-6 mb-2">
+                  <!-- ปุ่มแก้ไขข้อมูลส่วนตัว (เดิม) -->
                   <a href="{% url 'employee_edit' person_id=person.id %}" class="menu-btn">
                     <i class="fas fa-user-edit text-primary"></i> แก้ไขข้อมูลส่วนตัว
                   </a>
                 </div>
-              </div>
-              
-              {% if user.is_superuser %}                 
-                  {% if not is_admin_view %}
-                  <a href="{% url 'employee_list' %}" class="btn btn-danger btn-sm">
-                    <i class="fas fa-users-cog me-1"></i> จัดการพนักงาน
-                  </a>
+                <div class="col-lg-6 mb-2">
+                  <!-- ปุ่มเปลี่ยนรหัสผ่าน -->
+                  {% if user.is_superuser and is_admin_view %}
+                    <!-- ถ้า superuser กำลังดูแดชบอร์ดของคนอื่น -->
+                    <a href="{% url 'change_password' %}?person_id={{ person.id }}" class="menu-btn">
+                      <i class="fas fa-key text-danger"></i> เปลี่ยนรหัสผ่านของ {{ person.first_name }}
+                    </a>
+                  {% else %}
+                    <!-- ปุ่มเปลี่ยนรหัสผ่านปกติ -->
+                    <a href="{% url 'change_password' %}" class="menu-btn">
+                      <i class="fas fa-key text-warning"></i> เปลี่ยนรหัสผ่าน
+                    </a>
                   {% endif %}
                 </div>
+              </div>
               
+              {% if user.is_superuser %}
+                <div class="row mt-3">
+                  <div class="col-lg-6 mb-2">
+                    {% if not is_admin_view %}
+                    <a href="{% url 'employee_list' %}" class="btn btn-danger btn-sm">
+                      <i class="fas fa-users-cog me-1"></i> จัดการพนักงาน
+                    </a>
+                    {% endif %}
+                  </div>
+                  <div class="col-lg-6 mb-2">
+                    <!-- ปุ่มจัดการคำขอรหัสผ่าน (สำหรับ Admin) -->
+                    <a href="{% url 'admin_password_requests' %}" class="btn btn-warning btn-sm">
+                      <i class="fas fa-user-cog me-1"></i> จัดการคำขอรหัสผ่าน
+                      <span class="badge badge-danger ms-1" id="password-requests-badge" style="display: none;"></span>
+                    </a>
+                  </div>
+                </div>
               {% endif %}
             </div>
           </div>
@@ -278,6 +301,32 @@
     </div>
   </div>
 </div>
+
+<!-- Script สำหรับแจ้งเตือน real-time (สำหรับ superuser) -->
+{% if user.is_superuser %}
+<script>
+function updatePasswordRequestsBadge() {
+    fetch('/api/notification-count/')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('password-requests-badge');
+            if (data.count > 0) {
+                badge.textContent = data.count;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        })
+        .catch(error => console.error('Error fetching notification count:', error));
+}
+
+// อัพเดททุก 30 วินาที
+setInterval(updatePasswordRequestsBadge, 30000);
+// เรียกครั้งแรกเมื่อโหลดหน้า
+document.addEventListener('DOMContentLoaded', updatePasswordRequestsBadge);
+</script>
+{% endif %}
+
 {% endblock %}
 
 {% block extra_js %}

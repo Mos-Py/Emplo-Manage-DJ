@@ -1,0 +1,305 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}จัดการคำขอรีเซตรหัสผ่าน{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>
+            <i class="fas fa-user-cog text-danger"></i> จัดการคำขอรีเซตรหัสผ่าน
+        </h2>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> กลับแดชบอร์ด
+        </a>
+    </div>
+    
+    <!-- แสดงข้อความแจ้งเตือน -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {% if message.tags == 'success' %}
+                    <i class="fas fa-check-circle"></i>
+                {% else %}
+                    <i class="fas fa-exclamation-triangle"></i>
+                {% endif %}
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+    
+    <!-- สถิติ -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card bg-warning text-white">
+                <div class="card-body text-center">
+                    <i class="fas fa-clock fa-2x mb-2"></i>
+                    <h4>{{ pending_requests|length }}</h4>
+                    <p class="mb-0">คำขอรออนุมัติ</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- รายการคำขอ -->
+    {% if pending_requests %}
+        <div class="card shadow">
+            <div class="card-header bg-warning text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-list"></i> รายการคำขอรีเซตรหัสผ่าน
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Username</th>
+                                <th>ชื่อพนักงาน</th>
+                                <th>วันที่ขอ</th>
+                                <th>หมายเหตุ</th>
+                                <th>การดำเนินการ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for request in pending_requests %}
+                            <tr id="request-{{ request.user.id }}">
+                                <td>
+                                    <strong>{{ request.user.username }}</strong>
+                                </td>
+                                <td>
+                                    {% if request.user.person %}
+                                        {{ request.user.person.first_name }} {{ request.user.person.last_name }}
+                                        <br><small class="text-muted">{{ request.user.person.get_thai_role }}</small>
+                                    {% else %}
+                                        <span class="text-muted">ไม่มีข้อมูลพนักงาน</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {{ request.data.requested_at|slice:":10" }}
+                                    <br><small class="text-muted">{{ request.data.requested_at|slice:"11:19" }}</small>
+                                </td>
+                                <td>
+                                    {% if request.data.note %}
+                                        {{ request.data.note|truncatechars:50 }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" 
+                                                class="btn btn-success btn-sm" 
+                                                onclick="approveRequest('{{ request.user.username }}')">
+                                            <i class="fas fa-check"></i> อนุมัติ
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-danger btn-sm" 
+                                                onclick="rejectRequest('{{ request.user.username }}')">
+                                            <i class="fas fa-times"></i> ปฏิเสธ
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- ไม่มีคำขอ -->
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">ไม่มีคำขอรีเซตรหัสผ่าน</h4>
+                <p class="text-muted">ทุกคำขอได้รับการดำเนินการแล้ว</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Modal แสดงรหัสผ่านใหม่ -->
+<div class="modal fade" id="passwordModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-key"></i> รหัสผ่านใหม่
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle fa-2x mb-3"></i>
+                    <h4>อนุมัติสำเร็จ!</h4>
+                    <p class="mb-0">รหัสผ่านใหม่สำหรับ <strong id="modal-username"></strong>:</p>
+                </div>
+                
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h2 class="text-primary mb-0" id="modal-password" style="font-family: monospace; letter-spacing: 0.2rem;">
+                            ------
+                        </h2>
+                        <small class="text-muted">รหัสผ่านใหม่</small>
+                    </div>
+                </div>
+                
+                <div class="alert alert-warning mt-3">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>โปรดแจ้งให้พนักงานทราบ</strong><br>
+                    <small>รหัสผ่านนี้ใช้ Login ในหน้า Login ปกติได้เลย</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="copyPassword()">
+                    <i class="fas fa-copy"></i> คัดลอกรหัสผ่าน
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times"></i> ปิด
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// CSRF Token
+const csrfToken = '{{ csrf_token }}';
+
+// อนุมัติคำขอ
+function approveRequest(username) {
+    if (!confirm(`ยืนยันการอนุมัติคำขอของ ${username}?`)) {
+        return;
+    }
+    
+    fetch('/api/approve-request/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            username: username
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // แสดงรหัสผ่านใหม่ใน Modal
+            document.getElementById('modal-username').textContent = username;
+            
+            // Extract password from message
+            let password = 'ERROR';
+            
+            // ลองหลายรูปแบบ message
+            const patterns = [
+                /รหัสผ่านใหม่: (\w+)/,           // รหัสผ่านใหม่: 123456
+                /รหัสชั่วคราว: (\w+)/,           // รหัสชั่วคราว: 123456  
+                /รหัส: (\w+)/,                   // รหัส: 123456
+                /password: (\w+)/i,              // password: 123456
+                /(\d{6})/                        // หา 6 หลักตรงๆ
+            ];
+            
+            for (let pattern of patterns) {
+                const match = data.message.match(pattern);
+                if (match) {
+                    password = match[1];
+                    break;
+                }
+            }
+            
+            // ถ้ายังหาไม่เจอ ให้แสดงข้อความทั้งหมด
+            if (password === 'ERROR') {
+                console.log('Full message:', data.message);
+                // ลองแยกคำสุดท้าย
+                const words = data.message.split(' ');
+                const lastWord = words[words.length - 1];
+                if (/^\d{6}$/.test(lastWord)) {
+                    password = lastWord;
+                }
+            }
+            
+            document.getElementById('modal-password').textContent = password;
+            
+            // แสดง Modal
+            const modal = new bootstrap.Modal(document.getElementById('passwordModal'));
+            modal.show();
+            
+            // ซ่อนแถวคำขอ
+            const row = document.getElementById(`request-${username}`);
+            if (row) {
+                row.style.display = 'none';
+            }
+            
+            // อัพเดทจำนวนคำขอ
+            updateRequestCount();
+            
+        } else {
+            alert('เกิดข้อผิดพลาด: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    });
+}
+
+// ปฏิเสธคำขอ
+function rejectRequest(username) {
+    const reason = prompt(`เหตุผลในการปฏิเสธคำขอของ ${username}:`);
+    if (reason === null) return; // ยกเลิก
+    
+    fetch('/api/reject-request/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        },
+        body: JSON.stringify({
+            username: username,
+            reason: reason
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('ปฏิเสธคำขอสำเร็จ');
+            
+            // ซ่อนแถวคำขอ
+            const row = document.getElementById(`request-${username}`);
+            if (row) {
+                row.style.display = 'none';
+            }
+            
+            // อัพเดทจำนวนคำขอ
+            updateRequestCount();
+            
+        } else {
+            alert('เกิดข้อผิดพลาด: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+    });
+}
+
+// คัดลอกรหัสผ่าน
+function copyPassword() {
+    const password = document.getElementById('modal-password').textContent;
+    navigator.clipboard.writeText(password).then(() => {
+        alert('คัดลอกรหัสผ่านแล้ว!');
+    });
+}
+
+// อัพเดทจำนวนคำขอ
+function updateRequestCount() {
+    const visibleRows = document.querySelectorAll('tbody tr:not([style*="display: none"])').length;
+    // อัพเดท badge หรือ counter ตามต้องการ
+}
+</script>
+{% endblock %}

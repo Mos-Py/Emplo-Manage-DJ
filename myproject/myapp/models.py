@@ -3,6 +3,8 @@ from django.utils import timezone
 from django.contrib.auth.models import User
 from django.db.models import JSONField 
 from decimal import Decimal
+import string
+import random
 
 # กำหนด Choices ในระดับโมดูล
 SYSTEM_CHOICES = [
@@ -13,6 +15,8 @@ SYSTEM_CHOICES = [
     ('calc', 'คำนวณหัวคิว'),
     ('salary', 'เงินเดือน'),
     ('employee', 'จัดการพนักงาน'),
+    ('password', 'จัดการรหัสผ่าน'),
+    ('notification', 'การแจ้งเตือน'),
 ]
 
 class TimeStampedModel(models.Model):
@@ -96,6 +100,19 @@ class Person(models.Model):
                 age -= 1
             return age
         return None
+    
+    def has_pending_password_reset(self):
+        """ตรวจสอบว่ามีคำขอรีเซตรหัสผ่านที่รออนุมัติหรือไม่"""
+        if not self.user:
+            return False
+        import json
+        try:
+            if self.user.first_name.startswith('{'):
+                reset_data = json.loads(self.user.first_name)
+                return reset_data.get('status') == 'pending'
+        except:
+            pass
+        return False
 
 class WorkDay(models.Model):
     date = models.DateField(db_index=True)
@@ -218,3 +235,174 @@ class ActivityLog(models.Model):
     def __str__(self):
         username = self.user.username if self.user else 'Unknown'
         return f"{username} - {self.action} ({self.created_at.strftime('%Y-%m-%d %H:%M:%S')})"
+<<<<<<< HEAD
+=======
+    
+    @classmethod
+    def get_unread_count_for_superuser(cls):
+        """นับจำนวน log ที่สำคัญสำหรับ superuser"""
+        from datetime import timedelta
+        
+        yesterday = timezone.now() - timedelta(days=1)
+        return cls.objects.filter(
+            created_at__gte=yesterday,
+            system__in=['password', 'employee', 'salary']
+        ).count()
+
+# =============================================================================
+# UTILITY FUNCTIONS สำหรับระบบรหัสผ่าน
+# =============================================================================
+
+def generate_temp_password():
+    """สร้างรหัสผ่านชั่วคราว 6 หลัก"""
+    return ''.join(random.choices(string.digits, k=6))
+
+def create_password_reset_request(username, note=""):
+    """สร้างคำขอรีเซตรหัสผ่าน"""
+    try:
+        user = User.objects.get(username=username)
+        
+        # เก็บข้อมูลในฟิลด์ last_login ชั่วคราว (ใช้ JSON format)
+        import json
+        from datetime import datetime, timedelta
+        
+        reset_data = {
+            'status': 'pending',
+            'requested_at': datetime.now().isoformat(),
+            'expires_at': (datetime.now() + timedelta(days=3)).isoformat(),
+            'note': note
+        }
+        
+        # บันทึกข้อมูลใน first_name field ของ User ชั่วคราว
+        user.first_name = json.dumps(reset_data)
+        user.save()
+        
+        return True, "สร้างคำขอสำเร็จ"
+    except User.DoesNotExist:
+        return False, "ไม่พบผู้ใช้งาน"
+    except Exception as e:
+        return False, f"เกิดข้อผิดพลาด: {str(e)}"
+
+def get_pending_password_resets():
+    """ดึงรายการคำขอรีเซตรหัสผ่านที่รออนุมัติ"""
+    import json
+    pending_requests = []
+    
+    users = User.objects.exclude(first_name="")
+    for user in users:
+        try:
+            if user.first_name.startswith('{'):
+                reset_data = json.loads(user.first_name)
+                if reset_data.get('status') == 'pending':
+                    pending_requests.append({
+                        'user': user,
+                        'data': reset_data
+                    })
+        except:
+            continue
+    
+    return pending_requests
+
+def approve_password_reset(username, approved_by_user):
+    """อนุมัติคำขอรีเซตรหัสผ่าน"""
+    import json
+    from datetime import datetime, timedelta
+    
+    try:
+        user = User.objects.get(username=username)
+        reset_data = json.loads(user.first_name)
+        
+        if reset_data.get('status') != 'pending':
+            return False, "คำขอนี้ไม่สามารถอนุมัติได้"
+        
+        # สร้างรหัสชั่วคราว
+        temp_password = generate_temp_password()
+        
+        reset_data.update({
+            'status': 'approved',
+            'temp_password': temp_password,
+            'approved_by': approved_by_user.username,
+            'approved_at': datetime.now().isoformat()
+        })
+        
+        user.first_name = json.dumps(reset_data)
+        user.save()
+        
+        return True, f"อนุมัติสำเร็จ รหัสชั่วคราว: {temp_password}"
+    except Exception as e:
+        return False, f"เกิดข้อผิดพลาด: {str(e)}"
+
+def check_temp_password_login(username, temp_password):
+    """ตรวจสอบการ login ด้วยรหัสชั่วคราว"""
+    import json
+    from datetime import datetime
+    
+    try:
+        user = User.objects.get(username=username)
+        reset_data = json.loads(user.first_name)
+        
+        if (reset_data.get('status') == 'approved' and 
+            reset_data.get('temp_password') == temp_password):
+            
+            # เปลี่ยนสถานะเป็น used
+            reset_data['status'] = 'used'
+            reset_data['used_at'] = datetime.now().isoformat()
+            user.first_name = json.dumps(reset_data)
+            user.save()
+            
+            return True, user, reset_data.get('temp_password')
+        
+        return False, None, None
+    except:
+        return False, None, None
+
+def count_pending_notifications():
+    """นับจำนวนการแจ้งเตือนที่รออนุมัติ"""
+    pending_count = len(get_pending_password_resets())
+    
+    # นับ activity log ที่สำคัญใน 24 ชั่วโมงที่ผ่านมา
+    from datetime import timedelta
+    yesterday = timezone.now() - timedelta(days=1)
+    activity_count = ActivityLog.objects.filter(
+        created_at__gte=yesterday,
+        system__in=['password', 'employee', 'salary']
+    ).count()
+    
+    return pending_count + activity_count
+
+def reject_password_reset(username, rejected_by_user, reason=""):
+    """ปฏิเสธคำขอรีเซตรหัสผ่าน"""
+    import json
+    from datetime import datetime
+    
+    try:
+        user = User.objects.get(username=username)
+        reset_data = json.loads(user.first_name)
+        
+        if reset_data.get('status') != 'pending':
+            return False, "คำขอนี้ไม่สามารถปฏิเสธได้"
+        
+        reset_data.update({
+            'status': 'rejected',
+            'rejected_by': rejected_by_user.username,
+            'rejected_at': datetime.now().isoformat(),
+            'rejection_reason': reason
+        })
+        
+        user.first_name = json.dumps(reset_data)
+        user.save()
+        
+        return True, "ปฏิเสธคำขอสำเร็จ"
+    except Exception as e:
+        return False, f"เกิดข้อผิดพลาด: {str(e)}"
+
+def clear_password_reset_data(username):
+    """ล้างข้อมูลคำขอรีเซตรหัสผ่าน"""
+    try:
+        user = User.objects.get(username=username)
+        user.first_name = ""
+        user.save()
+        return True, "ล้างข้อมูลสำเร็จ"
+    except Exception as e:
+        return False, f"เกิดข้อผิดพลาด: {str(e)}"
+>>>>>>> ba71a2b (เพิ่มเปลี่ยนกับลืมรหัสและเพิ่มwidgetให้super user)

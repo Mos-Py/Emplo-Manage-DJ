@@ -24,6 +24,15 @@
             </div>
             <button type="submit" class="btn btn-primary w-100">เข้าสู่ระบบ</button>
         </form>
+        
+        <!-- เพิ่มลิงก์ลืมรหัสผ่าน -->
+        <div class="text-center mt-3">
+            <small>
+                <a href="{% url 'forgot_password' %}" class="text-muted text-decoration-none">
+                    <i class="fas fa-question-circle"></i> ลืมรหัสผ่าน?
+                </a>
+            </small>
+        </div>
     </div>
 </div>
 {% endblock %}
